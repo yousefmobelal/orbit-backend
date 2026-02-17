@@ -1,11 +1,6 @@
 import Planet from '@/models/planet.model';
 import Task from '@/models/task.model';
-import {
-  CreateTaskInput,
-  TaskCompletionResult,
-  TaskDifficulty,
-  UpdateTaskInput,
-} from '@/types/task';
+import { CreateTaskInput, TaskCompletionResult, UpdateTaskInput } from '@/types/task';
 import { LevelUpEvent } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
 import { getTaskXP, calculatePlanetXPForNextLevel } from '@/config/progression';

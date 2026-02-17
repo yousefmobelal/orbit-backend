@@ -1,5 +1,5 @@
 import User from '@/models/user.model';
-import { UserLevelUpEvent } from '@/types/user';
+import { UserLevelUpEvent, UserType } from '@/types/user';
 import { HttpError } from '@/utils/http-error';
 import { calculateUserXPForNextLevel } from '@/config/progression';
 
