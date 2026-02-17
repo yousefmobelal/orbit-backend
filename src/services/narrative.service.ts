@@ -88,6 +88,9 @@ const buildPrompt = (eventType: NarrativeEventType, metadata: NarrativeMetadata)
     case 'FIRST_PLANET':
       return `User created their first planet "${metadata.planetTitle}". Generate a welcoming narrative about beginning their journey.`;
 
+    case 'NEW_PLANET':
+      return `User created a new planet "${metadata.planetTitle}". Generate a narrative about expanding their galaxy.`;
+
     default:
       return 'Generate a motivational space-themed message about productivity.';
   }
@@ -117,6 +120,9 @@ const generateWithTemplate = (
 
     FIRST_PLANET: (meta) =>
       `"${meta.planetTitle}" now orbits in your galaxy. Every great system begins with a single intention.`,
+
+    NEW_PLANET: (meta) =>
+      `"${meta.planetTitle}" joins your orbit. Your constellation of purpose expands.`,
   };
 
   const generator = templates[eventType];

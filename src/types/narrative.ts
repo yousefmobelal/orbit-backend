@@ -4,6 +4,7 @@ export const NARRATIVE_EVENT_TYPES = [
   'STREAK_14',
   'STREAK_30',
   'FIRST_PLANET',
+  'NEW_PLANET',
   'PLANET_LEVEL_UP',
 ] as const;
 

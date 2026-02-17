@@ -1,5 +1,6 @@
 import { LevelUpEvent } from './planet';
 import { UserLevelUpEvent } from './user';
+import { NarrativeResponse } from './narrative';
 
 export const TASK_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
 export type TaskDifficulty = (typeof TASK_DIFFICULTIES)[number];
@@ -54,6 +55,8 @@ export interface TaskCompletionResult {
     globalLevel: number;
   };
   userLevelUpEvent?: UserLevelUpEvent;
+  // Achievement narratives
+  narratives?: NarrativeResponse[];
 }
 
 export interface RecurringTaskCooldown {

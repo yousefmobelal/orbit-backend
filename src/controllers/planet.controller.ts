@@ -17,8 +17,8 @@ export const createPlanetHandler = asyncHandler(async (req, res) => {
   }
 
   const payload = req.body as CreatePlanetInput;
-  const planet = await createPlanet(req.user._id.toString(), payload);
-  res.status(201).json(planet);
+  const { planet, narrative } = await createPlanet(req.user._id.toString(), payload);
+  res.status(201).json({ planet, narrative });
 });
 
 export const getUserPlanetsHandler = asyncHandler(async (req, res) => {

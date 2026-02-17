@@ -10,7 +10,15 @@ const narrativeSchema = new mongoose.Schema(
     },
     eventType: {
       type: String,
-      enum: ['LEVEL_UP', 'STREAK_7', 'STREAK_14', 'STREAK_30', 'FIRST_PLANET', 'PLANET_LEVEL_UP'],
+      enum: [
+        'LEVEL_UP',
+        'STREAK_7',
+        'STREAK_14',
+        'STREAK_30',
+        'FIRST_PLANET',
+        'NEW_PLANET',
+        'PLANET_LEVEL_UP',
+      ],
       required: true,
     },
     content: {

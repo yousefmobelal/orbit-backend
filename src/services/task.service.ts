@@ -363,10 +363,16 @@ export const completeTask = async (
     );
   }
 
-  // Execute narrative generation in background (don't block response)
-  Promise.all(narrativePromises).catch((error) => {
-    console.error('Failed to generate narratives:', error);
-  });
+  // Generate narratives synchronously for immediate feedback
+  let narratives: any[] = [];
+  if (narrativePromises.length > 0) {
+    try {
+      narratives = await Promise.all(narrativePromises);
+    } catch (error) {
+      console.error('Failed to generate narratives:', error);
+      // Continue without narratives rather than failing the task completion
+    }
+  }
 
   const result: TaskCompletionResult = {
     task: task.toObject() as any,
@@ -383,6 +389,8 @@ export const completeTask = async (
       globalLevel: updatedUser.globalLevel,
     },
     userLevelUpEvent: userLevelUpEvent || undefined,
+    // Achievement narratives
+    narratives: narratives.length > 0 ? narratives : undefined,
   };
 
   return result;

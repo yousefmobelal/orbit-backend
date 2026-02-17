@@ -27,21 +27,18 @@ export const createPlanet = async (userId: string, input: CreatePlanetInput) => 
     order,
   });
 
-  // Generate narrative for first planet (async, non-blocking)
-  if (isFirstPlanet) {
-    createNarrative({
-      userId,
-      eventType: 'FIRST_PLANET',
-      metadata: {
-        planetTitle: planet.title,
-        planetId: planet._id.toString(),
-      },
-    }).catch((error) => {
-      console.error('Failed to generate first planet narrative:', error);
-    });
-  }
+  // Generate narrative for planet creation (synchronous to return with planet)
+  const eventType = isFirstPlanet ? 'FIRST_PLANET' : 'NEW_PLANET';
+  const narrative = await createNarrative({
+    userId,
+    eventType,
+    metadata: {
+      planetTitle: planet.title,
+      planetId: planet._id.toString(),
+    },
+  });
 
-  return planet;
+  return { planet: planet.toObject(), narrative };
 };
 
 export const getUserPlanets = async (userId: string) => {
