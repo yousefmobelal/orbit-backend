@@ -8,6 +8,7 @@ interface IUser extends Document {
   lastActiveDate: Date;
   globalXP: number;
   globalLevel: number;
+  isPublic: boolean;
   email: string;
   password: string;
   correctPassword(candidatePassword: string, userPassword: string): Promise<boolean>;
@@ -41,6 +42,10 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Number,
       default: 1,
       min: 1,
+    },
+    isPublic: {
+      type: Boolean,
+      default: false,
     },
     email: {
       type: String,

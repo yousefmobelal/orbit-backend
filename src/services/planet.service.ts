@@ -2,6 +2,7 @@ import Planet from '@/models/planet.model';
 import { CreatePlanetInput, LevelUpEvent, UpdatePlanetInput } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
 import { PROGRESSION, calculatePlanetXPForNextLevel } from '@/config/progression';
+import { createNarrative } from './narrative.service';
 
 export const createPlanet = async (userId: string, input: CreatePlanetInput) => {
   // Check planet limit
@@ -9,6 +10,9 @@ export const createPlanet = async (userId: string, input: CreatePlanetInput) => 
   if (planetCount >= PROGRESSION.MAX_PLANETS_PER_USER) {
     throw new HttpError(`Maximum ${PROGRESSION.MAX_PLANETS_PER_USER} planets allowed`, 400);
   }
+
+  // Check if this is the first planet
+  const isFirstPlanet = planetCount === 0;
 
   // Get next order number
   const maxOrder = await Planet.findOne({ userId }).sort({ order: -1 }).select('order').lean();
@@ -22,6 +26,20 @@ export const createPlanet = async (userId: string, input: CreatePlanetInput) => 
     theme: input.theme,
     order,
   });
+
+  // Generate narrative for first planet (async, non-blocking)
+  if (isFirstPlanet) {
+    createNarrative({
+      userId,
+      eventType: 'FIRST_PLANET',
+      metadata: {
+        planetTitle: planet.title,
+        planetId: planet._id.toString(),
+      },
+    }).catch((error) => {
+      console.error('Failed to generate first planet narrative:', error);
+    });
+  }
 
   return planet;
 };

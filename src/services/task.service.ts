@@ -12,6 +12,7 @@ import { LevelUpEvent } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
 import { getTaskXP, calculatePlanetXPForNextLevel } from '@/config/progression';
 import { addGlobalXP, updateUserGlobalStreak } from './user.service';
+import { createNarrative } from './narrative.service';
 
 const canCompleteRecurringTask = (
   recurring: RecurringPattern,
@@ -289,6 +290,83 @@ export const completeTask = async (
 
   // Add XP to user global stats (handles user level ups)
   const { user: updatedUser, levelUpEvent: userLevelUpEvent } = await addGlobalXP(userId, xpEarned);
+
+  // Generate narratives for significant events (async, non-blocking)
+  const narrativePromises = [];
+
+  // Planet level-up narrative
+  if (planetLevelUpEvent) {
+    narrativePromises.push(
+      createNarrative({
+        userId,
+        eventType: 'PLANET_LEVEL_UP',
+        metadata: {
+          level: planetLevelUpEvent.newLevel,
+          previousLevel: planetLevelUpEvent.previousLevel,
+          planetTitle: planetLevelUpEvent.planetTitle,
+          planetId: planetLevelUpEvent.planetId,
+        },
+      }),
+    );
+  }
+
+  // User level-up narrative
+  if (userLevelUpEvent) {
+    narrativePromises.push(
+      createNarrative({
+        userId,
+        eventType: 'LEVEL_UP',
+        metadata: {
+          globalLevel: userLevelUpEvent.newLevel,
+          previousLevel: userLevelUpEvent.previousLevel,
+        },
+      }),
+    );
+  }
+
+  // Streak milestone narratives
+  if (planetStreak === 7) {
+    narrativePromises.push(
+      createNarrative({
+        userId,
+        eventType: 'STREAK_7',
+        metadata: {
+          streak: 7,
+          planetTitle: planet.title,
+          planetId: planet._id,
+        },
+      }),
+    );
+  } else if (planetStreak === 14) {
+    narrativePromises.push(
+      createNarrative({
+        userId,
+        eventType: 'STREAK_14',
+        metadata: {
+          streak: 14,
+          planetTitle: planet.title,
+          planetId: planet._id,
+        },
+      }),
+    );
+  } else if (planetStreak === 30) {
+    narrativePromises.push(
+      createNarrative({
+        userId,
+        eventType: 'STREAK_30',
+        metadata: {
+          streak: 30,
+          planetTitle: planet.title,
+          planetId: planet._id,
+        },
+      }),
+    );
+  }
+
+  // Execute narrative generation in background (don't block response)
+  Promise.all(narrativePromises).catch((error) => {
+    console.error('Failed to generate narratives:', error);
+  });
 
   const result: TaskCompletionResult = {
     task: task.toObject() as any,
