@@ -13,11 +13,7 @@ import { HttpError } from '@/utils/http-error';
 import { getTaskXP, calculatePlanetXPForNextLevel } from '@/config/progression';
 import { addGlobalXP, updateUserGlobalStreak } from './user.service';
 
-/**
- * Check if a recurring task can be completed based on cooldown period
- */
 const canCompleteRecurringTask = (
-  task: any,
   recurring: RecurringPattern,
   lastCompletedDate?: Date,
 ): RecurringTaskCooldown => {
@@ -94,9 +90,6 @@ const canCompleteRecurringTask = (
   }
 };
 
-/**
- * Get completion status for a task (useful for frontend)
- */
 export const getTaskCompletionStatus = (task: any): TaskCompletionStatus => {
   // Non-recurring tasks: check isCompleted flag
   if (task.recurring === 'none') {
@@ -107,7 +100,7 @@ export const getTaskCompletionStatus = (task: any): TaskCompletionStatus => {
   }
 
   // Recurring tasks: check cooldown
-  const cooldown = canCompleteRecurringTask(task, task.recurring, task.lastCompletedDate);
+  const cooldown = canCompleteRecurringTask(task.recurring, task.lastCompletedDate);
 
   return {
     isCompletedToday: !cooldown.canComplete,
@@ -116,10 +109,6 @@ export const getTaskCompletionStatus = (task: any): TaskCompletionStatus => {
   };
 };
 
-/**
- * Update planet streak, add XP, and handle level-ups in a single DB operation
- * This combines streak update and XP addition to eliminate redundant fetches
- */
 const updatePlanetProgress = async (
   planetId: string,
   userId: string,
@@ -267,11 +256,7 @@ export const completeTask = async (
 
   // For recurring tasks, validate cooldown
   if (task.recurring !== 'none') {
-    const cooldown = canCompleteRecurringTask(
-      task,
-      task.recurring,
-      task.lastCompletedDate || undefined,
-    );
+    const cooldown = canCompleteRecurringTask(task.recurring, task.lastCompletedDate || undefined);
     if (!cooldown.canComplete) {
       throw new HttpError(cooldown.reason || 'Task cannot be completed yet', 400);
     }

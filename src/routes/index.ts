@@ -5,6 +5,7 @@ import { taskRouter } from './task.routes';
 
 export const registerRoutes = (app: Router) => {
   app.use('/api/auth', authRouter);
+  app.use('/api/user', authRouter);
   app.use('/api/planet', planetRouter);
   app.use('/api/task', taskRouter);
 };
