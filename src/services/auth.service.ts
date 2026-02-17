@@ -43,6 +43,14 @@ export const revokeRefreshToken = async (userId: string) => {
   await RefreshToken.deleteMany({ userId });
 };
 
+export const logout = async (token: string): Promise<void> => {
+  const payload = verifyRefreshToken(token);
+  await RefreshToken.deleteOne({
+    tokenId: payload.tokenId,
+    userId: payload.sub,
+  });
+};
+
 export const register = async (input: RegisterInput): Promise<AuthTokens> => {
   try {
     const isUserExists = await User.exists({ email: input.email });
@@ -90,8 +98,23 @@ export const login = async (input: LoginInput): Promise<AuthTokens> => {
 };
 
 const REFRESH_TOKEN_TTL_DAYS = 30;
+const MAX_ACTIVE_SESSIONS = 5;
+
+const limitActiveSessions = async (userId: string) => {
+  const tokenCount = await RefreshToken.countDocuments({ userId });
+  if (tokenCount >= MAX_ACTIVE_SESSIONS) {
+    const tokensToDelete = tokenCount - MAX_ACTIVE_SESSIONS + 1;
+    const oldestTokens = await RefreshToken.find({ userId })
+      .sort({ createdAt: 1 })
+      .limit(tokensToDelete);
+    await RefreshToken.deleteMany({
+      _id: { $in: oldestTokens.map((t) => t._id) },
+    });
+  }
+};
 
 const createRefreshToken = async (userId: string) => {
+  await limitActiveSessions(userId);
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
   const tokenId = crypto.randomUUID();

@@ -27,3 +27,7 @@ export const signRefreshToken = (payload: RefreshTokenPayload): string => {
 export const verifyRefreshToken = (payload: string): RefreshTokenPayload => {
   return jwt.verify(payload, REFRESH_TOKEN_SECRET) as RefreshTokenPayload;
 };
+
+export const verifyAccessToken = (payload: string): AccessTokenPayload => {
+  return jwt.verify(payload, ACCESS_TOKEN_SECRET) as AccessTokenPayload;
+};

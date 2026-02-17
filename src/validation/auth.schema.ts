@@ -24,10 +24,8 @@ export const refreshSchema = z.object({
   }),
 });
 
-export const revokeSchema = z.object({
+export const logoutSchema = z.object({
   body: z.object({
-    userId: z.string().refine((value) => /^[0-9a-fA-F]{24}$/.test(value), {
-      message: 'Invalid user ID format',
-    }),
+    refreshToken: z.string(),
   }),
 });

@@ -4,6 +4,10 @@ import bcrypt from 'bcrypt';
 
 interface IUser extends Document {
   name: string;
+  globalStreak: number;
+  lastActiveDate: Date;
+  globalXP: number;
+  globalLevel: number;
   email: string;
   password: string;
   correctPassword(candidatePassword: string, userPassword: string): Promise<boolean>;
@@ -17,6 +21,26 @@ const userSchema = new mongoose.Schema<IUser>(
       trim: true,
       maxlength: [40, 'Name must have less or equal than 40 characters'],
       minlength: [3, 'Name must have more or equal than 3 characters'],
+    },
+    globalStreak: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    lastActiveDate: {
+      type: Date,
+    },
+    globalXP: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    globalLevel: {
+      type: Number,
+      default: 1,
+      min: 1,
     },
     email: {
       type: String,

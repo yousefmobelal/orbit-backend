@@ -1,11 +1,13 @@
 import {
   loginHandler,
+  logoutHandler,
   refreshTokenHandler,
   registerHandler,
   revokeTokenHandler,
 } from '@/controllers/auth.controller';
+import { authenticate } from '@/middleware/auth.middleware';
 import { validateRequest } from '@/utils/validate-request';
-import { loginSchema, refreshSchema, registerSchema, revokeSchema } from '@/validation/auth.schema';
+import { loginSchema, logoutSchema, refreshSchema, registerSchema } from '@/validation/auth.schema';
 import { Router } from 'express';
 
 export const authRouter: Router = Router();
@@ -17,4 +19,5 @@ authRouter.post(
   validateRequest({ body: refreshSchema.shape.body }),
   refreshTokenHandler,
 );
-authRouter.post('/revoke', validateRequest({ body: revokeSchema.shape.body }), revokeTokenHandler);
+authRouter.post('/logout', validateRequest({ body: logoutSchema.shape.body }), logoutHandler);
+authRouter.post('/revoke', authenticate, revokeTokenHandler);
