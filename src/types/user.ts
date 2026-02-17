@@ -7,3 +7,18 @@ export interface UserType {
   globalLevel: number;
   email: string;
 }
+
+export interface UserLevelUpEvent {
+  userId: string;
+  previousLevel: number;
+  newLevel: number;
+  totalXP: number;
+}
+
+export interface UserStatsUpdate {
+  globalStreak: number;
+  globalXP: number;
+  globalLevel: number;
+  lastActiveDate: Date;
+  levelUpEvent?: UserLevelUpEvent;
+}

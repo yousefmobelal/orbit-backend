@@ -1,14 +1,13 @@
 import Planet from '@/models/planet.model';
 import { CreatePlanetInput, LevelUpEvent, UpdatePlanetInput } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
-
-const MAX_PLANETS = 6;
+import { PROGRESSION, calculatePlanetXPForNextLevel } from '@/config/progression';
 
 export const createPlanet = async (userId: string, input: CreatePlanetInput) => {
   // Check planet limit
   const planetCount = await Planet.countDocuments({ userId, isArchived: false });
-  if (planetCount >= MAX_PLANETS) {
-    throw new HttpError(`Maximum ${MAX_PLANETS} planets allowed`, 400);
+  if (planetCount >= PROGRESSION.MAX_PLANETS_PER_USER) {
+    throw new HttpError(`Maximum ${PROGRESSION.MAX_PLANETS_PER_USER} planets allowed`, 400);
   }
 
   // Get next order number
@@ -64,15 +63,11 @@ export const archivePlanet = async (planetId: string, userId: string) => {
   await planet.save();
 };
 
-export const calculateXPForNextLevel = (level: number): number => {
-  return 100 + level * 40;
-};
-
 export const addXP = async (
   planetId: string,
   userId: string,
   xpAmount: number,
-): Promise<LevelUpEvent | null> => {
+): Promise<{ planet: any; levelUpEvent: LevelUpEvent | null }> => {
   const planet = await Planet.findOne({ _id: planetId, userId });
   if (!planet) {
     throw new HttpError('Planet not found', 404);
@@ -82,7 +77,7 @@ export const addXP = async (
 
   // Check for level up
   let levelUpEvent: LevelUpEvent | null = null;
-  const requiredXP = calculateXPForNextLevel(planet.level);
+  const requiredXP = calculatePlanetXPForNextLevel(planet.level);
 
   if (planet.xp >= requiredXP) {
     const previousLevel = planet.level;
@@ -99,5 +94,5 @@ export const addXP = async (
   }
 
   await planet.save();
-  return levelUpEvent;
+  return { planet: planet.toObject(), levelUpEvent };
 };

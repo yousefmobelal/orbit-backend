@@ -1,0 +1,81 @@
+import User from '@/models/user.model';
+import { UserLevelUpEvent } from '@/types/user';
+import { HttpError } from '@/utils/http-error';
+import { calculateUserXPForNextLevel } from '@/config/progression';
+
+/**
+ * XP Distribution Strategy: DUPLICATE
+ * - Task XP is given to BOTH planet and user
+ * - Planet progression: Shows focused goal mastery (100 + level × 40)
+ * - User progression: Shows overall productivity (200 + level × 80)
+ * - Different formulas balance progression rates despite duplicate XP
+ */
+
+export const updateUserGlobalStreak = async (
+  userId: string,
+): Promise<{ user: any; streak: number }> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new HttpError('User not found', 404);
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!user.lastActiveDate) {
+    // First completion ever
+    user.globalStreak = 1;
+    user.lastActiveDate = new Date();
+  } else {
+    const lastActive = new Date(user.lastActiveDate);
+    lastActive.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.floor((today.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      // Yesterday - increment streak
+      user.globalStreak += 1;
+      user.lastActiveDate = new Date();
+    } else if (diffDays > 1) {
+      // Gap > 1 day - reset streak
+      user.globalStreak = 1;
+      user.lastActiveDate = new Date();
+    }
+    // If diffDays === 0 (same day), no changes needed - streak maintained
+  }
+
+  await user.save();
+  return { user: user.toObject(), streak: user.globalStreak };
+};
+
+export const addGlobalXP = async (
+  userId: string,
+  xpAmount: number,
+): Promise<{ user: any; levelUpEvent: UserLevelUpEvent | null }> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new HttpError('User not found', 404);
+  }
+
+  user.globalXP += xpAmount;
+
+  // Check for level up
+  let levelUpEvent: UserLevelUpEvent | null = null;
+  const requiredXP = calculateUserXPForNextLevel(user.globalLevel);
+
+  if (user.globalXP >= requiredXP) {
+    const previousLevel = user.globalLevel;
+    user.globalLevel += 1;
+    user.globalXP -= requiredXP; // Carry over remaining XP
+
+    levelUpEvent = {
+      userId: user._id.toString(),
+      previousLevel,
+      newLevel: user.globalLevel,
+      totalXP: user.globalXP,
+    };
+  }
+
+  await user.save();
+  return { user: user.toObject(), levelUpEvent };
+};
