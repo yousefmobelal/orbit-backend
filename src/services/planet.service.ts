@@ -1,0 +1,103 @@
+import Planet from '@/models/planet.model';
+import { CreatePlanetInput, LevelUpEvent, UpdatePlanetInput } from '@/types/planet';
+import { HttpError } from '@/utils/http-error';
+
+const MAX_PLANETS = 6;
+
+export const createPlanet = async (userId: string, input: CreatePlanetInput) => {
+  // Check planet limit
+  const planetCount = await Planet.countDocuments({ userId, isArchived: false });
+  if (planetCount >= MAX_PLANETS) {
+    throw new HttpError(`Maximum ${MAX_PLANETS} planets allowed`, 400);
+  }
+
+  // Get next order number
+  const maxOrder = await Planet.findOne({ userId }).sort({ order: -1 }).select('order').lean();
+  const order = maxOrder ? maxOrder.order + 1 : 0;
+
+  // Create planet
+  const planet = await Planet.create({
+    userId,
+    title: input.title,
+    description: input.description,
+    theme: input.theme,
+    order,
+  });
+
+  return planet;
+};
+
+export const getUserPlanets = async (userId: string) => {
+  const planets = await Planet.find({ userId, isArchived: false }).sort({ order: 1 }).lean();
+  return planets;
+};
+
+export const getPlanetById = async (planetId: string, userId: string) => {
+  const planet = await Planet.findOne({ _id: planetId, userId }).lean();
+  if (!planet) {
+    throw new HttpError('Planet not found', 404);
+  }
+  return planet;
+};
+
+export const updatePlanet = async (planetId: string, userId: string, input: UpdatePlanetInput) => {
+  const planet = await Planet.findOne({ _id: planetId, userId });
+  if (!planet) {
+    throw new HttpError('Planet not found', 404);
+  }
+
+  if (input.title !== undefined) planet.title = input.title;
+  if (input.description !== undefined) planet.description = input.description;
+  if (input.theme !== undefined) planet.theme = input.theme;
+
+  await planet.save();
+  return planet;
+};
+
+export const archivePlanet = async (planetId: string, userId: string) => {
+  const planet = await Planet.findOne({ _id: planetId, userId });
+  if (!planet) {
+    throw new HttpError('Planet not found', 404);
+  }
+
+  planet.isArchived = true;
+  await planet.save();
+};
+
+export const calculateXPForNextLevel = (level: number): number => {
+  return 100 + level * 40;
+};
+
+export const addXP = async (
+  planetId: string,
+  userId: string,
+  xpAmount: number,
+): Promise<LevelUpEvent | null> => {
+  const planet = await Planet.findOne({ _id: planetId, userId });
+  if (!planet) {
+    throw new HttpError('Planet not found', 404);
+  }
+
+  planet.xp += xpAmount;
+
+  // Check for level up
+  let levelUpEvent: LevelUpEvent | null = null;
+  const requiredXP = calculateXPForNextLevel(planet.level);
+
+  if (planet.xp >= requiredXP) {
+    const previousLevel = planet.level;
+    planet.level += 1;
+    planet.xp -= requiredXP; // Carry over remaining XP
+
+    levelUpEvent = {
+      planetId: planet._id.toString(),
+      previousLevel,
+      newLevel: planet.level,
+      userId,
+      planetTitle: planet.title,
+    };
+  }
+
+  await planet.save();
+  return levelUpEvent;
+};

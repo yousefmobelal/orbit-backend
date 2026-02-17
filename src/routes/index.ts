@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { authRouter } from './auth.routes';
-import { userRouter } from './user.routes';
+import { planetRouter } from './planet.routes';
 
 export const registerRoutes = (app: Router) => {
   app.use('/api/auth', authRouter);
-  app.use('/api/user', userRouter);
+  app.use('/api/planet', planetRouter);
 };
