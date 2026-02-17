@@ -8,6 +8,8 @@ import {
 import { CreatePlanetInput, UpdatePlanetInput } from '@/types/planet';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
+import { PLANET_THEMES } from '@/types/planet';
+import { THEME_COLORS } from '@/config/theme-colors';
 
 export const createPlanetHandler = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -57,4 +59,21 @@ export const archivePlanetHandler = asyncHandler(async (req, res) => {
   const id = req.params.id as string;
   await archivePlanet(id, req.user._id.toString());
   res.status(204).send();
+});
+
+/**
+ * Get all available planet themes with their color palettes
+ * @route GET /api/planet/themes
+ * @access Public (metadata for planet creation UI)
+ */
+export const getThemesHandler = asyncHandler(async (req, res) => {
+  const themes = PLANET_THEMES.map((themeName) => ({
+    name: themeName,
+    colors: THEME_COLORS[themeName],
+  }));
+
+  res.status(200).json({
+    status: 'success',
+    data: { themes },
+  });
 });
