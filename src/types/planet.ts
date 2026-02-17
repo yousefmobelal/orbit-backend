@@ -44,3 +44,17 @@ export interface LevelUpEvent {
   userId: string;
   planetTitle: string;
 }
+
+export interface ThemeInfo {
+  name: PlanetTheme;
+  colors: {
+    primary: string;
+    secondary: string;
+    glow: string;
+    atmosphere: string;
+    accent: string;
+    shadow: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
+}
