@@ -37,6 +37,10 @@ const taskSchema = new mongoose.Schema(
     completedAt: {
       type: Date,
     },
+    lastCompletedDate: {
+      type: Date,
+      // For recurring tasks - tracks when last completed for cooldown validation
+    },
     recurring: {
       type: String,
       enum: ['none', 'daily', 'weekly', 'monthly'],

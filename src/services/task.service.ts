@@ -1,11 +1,125 @@
 import Planet from '@/models/planet.model';
 import Task from '@/models/task.model';
-import { CreateTaskInput, TaskCompletionResult, UpdateTaskInput } from '@/types/task';
+import {
+  CreateTaskInput,
+  RecurringPattern,
+  RecurringTaskCooldown,
+  TaskCompletionResult,
+  TaskCompletionStatus,
+  UpdateTaskInput,
+} from '@/types/task';
 import { LevelUpEvent } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
 import { getTaskXP, calculatePlanetXPForNextLevel } from '@/config/progression';
 import { addGlobalXP, updateUserGlobalStreak } from './user.service';
 
+/**
+ * Check if a recurring task can be completed based on cooldown period
+ */
+const canCompleteRecurringTask = (
+  task: any,
+  recurring: RecurringPattern,
+  lastCompletedDate?: Date,
+): RecurringTaskCooldown => {
+  // Non-recurring tasks always completable (checked elsewhere)
+  if (recurring === 'none') {
+    return { canComplete: true };
+  }
+
+  // If never completed, can complete now
+  if (!lastCompletedDate) {
+    return { canComplete: true };
+  }
+
+  const now = new Date();
+  const lastCompleted = new Date(lastCompletedDate);
+
+  switch (recurring) {
+    case 'daily': {
+      // Check if 24 hours have passed
+      const hoursSinceCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceCompletion >= 24) {
+        return { canComplete: true };
+      }
+
+      const hoursRemaining = Math.ceil(24 - hoursSinceCompletion);
+      const availableAt = new Date(lastCompleted.getTime() + 24 * 60 * 60 * 1000);
+
+      return {
+        canComplete: false,
+        reason: `Task can be completed again in ${hoursRemaining} hour(s)`,
+        availableAt,
+        hoursRemaining,
+      };
+    }
+
+    case 'weekly': {
+      // Check if 7 days have passed
+      const daysSinceCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceCompletion >= 7) {
+        return { canComplete: true };
+      }
+
+      const daysRemaining = Math.ceil(7 - daysSinceCompletion);
+      const availableAt = new Date(lastCompleted.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      return {
+        canComplete: false,
+        reason: `Task can be completed again in ${daysRemaining} day(s)`,
+        availableAt,
+        hoursRemaining: daysRemaining * 24,
+      };
+    }
+
+    case 'monthly': {
+      // Check if 30 days have passed (simplified monthly calculation)
+      const daysSinceCompletion = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceCompletion >= 30) {
+        return { canComplete: true };
+      }
+
+      const daysRemaining = Math.ceil(30 - daysSinceCompletion);
+      const availableAt = new Date(lastCompleted.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      return {
+        canComplete: false,
+        reason: `Task can be completed again in ${daysRemaining} day(s)`,
+        availableAt,
+        hoursRemaining: daysRemaining * 24,
+      };
+    }
+
+    default:
+      return { canComplete: true };
+  }
+};
+
+/**
+ * Get completion status for a task (useful for frontend)
+ */
+export const getTaskCompletionStatus = (task: any): TaskCompletionStatus => {
+  // Non-recurring tasks: check isCompleted flag
+  if (task.recurring === 'none') {
+    return {
+      isCompletedToday: task.isCompleted,
+      canComplete: !task.isCompleted,
+    };
+  }
+
+  // Recurring tasks: check cooldown
+  const cooldown = canCompleteRecurringTask(task, task.recurring, task.lastCompletedDate);
+
+  return {
+    isCompletedToday: !cooldown.canComplete,
+    canComplete: cooldown.canComplete,
+    nextAvailableAt: cooldown.availableAt,
+  };
+};
+
+/**
+ * Update planet streak, add XP, and handle level-ups in a single DB operation
+ * This combines streak update and XP addition to eliminate redundant fetches
+ */
 const updatePlanetProgress = async (
   planetId: string,
   userId: string,
@@ -146,13 +260,33 @@ export const completeTask = async (
     throw new HttpError('Task not found', 404);
   }
 
-  if (task.isCompleted) {
+  // For non-recurring tasks, check isCompleted flag
+  if (task.recurring === 'none' && task.isCompleted) {
     throw new HttpError('Task is already completed', 400);
   }
 
-  // Mark task as completed
-  task.isCompleted = true;
-  task.completedAt = new Date();
+  // For recurring tasks, validate cooldown
+  if (task.recurring !== 'none') {
+    const cooldown = canCompleteRecurringTask(
+      task,
+      task.recurring,
+      task.lastCompletedDate || undefined,
+    );
+    if (!cooldown.canComplete) {
+      throw new HttpError(cooldown.reason || 'Task cannot be completed yet', 400);
+    }
+  }
+
+  // Mark task completion based on type
+  if (task.recurring === 'none') {
+    // Non-recurring: permanently complete
+    task.isCompleted = true;
+    task.completedAt = new Date();
+  } else {
+    // Recurring: update lastCompletedDate for cooldown tracking
+    task.lastCompletedDate = new Date();
+    // Keep isCompleted = false so task remains active
+  }
   await task.save();
 
   // Calculate XP

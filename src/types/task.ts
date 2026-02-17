@@ -31,6 +31,7 @@ export interface TaskResponse {
   difficulty: TaskDifficulty;
   isCompleted: boolean;
   completedAt?: Date;
+  lastCompletedDate?: Date; // For recurring tasks
   recurring: RecurringPattern;
   order: number;
   isArchived: boolean;
@@ -53,4 +54,17 @@ export interface TaskCompletionResult {
     globalLevel: number;
   };
   userLevelUpEvent?: UserLevelUpEvent;
+}
+
+export interface RecurringTaskCooldown {
+  canComplete: boolean;
+  reason?: string;
+  availableAt?: Date;
+  hoursRemaining?: number;
+}
+
+export interface TaskCompletionStatus {
+  isCompletedToday: boolean;
+  canComplete: boolean;
+  nextAvailableAt?: Date;
 }
