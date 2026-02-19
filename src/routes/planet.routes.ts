@@ -2,7 +2,6 @@ import {
   archivePlanetHandler,
   createPlanetHandler,
   getPlanetHandler,
-  getThemesHandler,
   getUserPlanetsHandler,
   updatePlanetHandler,
 } from '@/controllers/planet.controller';
@@ -13,10 +12,7 @@ import { Router } from 'express';
 
 export const planetRouter = Router();
 
-// Public route - Get available planet themes with color palettes
-planetRouter.get('/themes', getThemesHandler);
-
-// All other planet routes require authentication
+// All planet routes require authentication
 planetRouter.use(authenticate);
 
 // Create a new planet

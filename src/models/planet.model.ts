@@ -20,15 +20,8 @@ const planetSchema = new mongoose.Schema(
       trim: true,
     },
     theme: {
-      type: String,
-      enum: [
-        'aurora-blue',
-        'solar-gold',
-        'crimson-nova',
-        'emerald-pulse',
-        'violet-drift',
-        'silver-orbit',
-      ],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Theme',
       required: true,
     },
 

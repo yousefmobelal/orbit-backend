@@ -1,24 +1,16 @@
-export const PLANET_THEMES = [
-  'aurora-blue',
-  'solar-gold',
-  'crimson-nova',
-  'emerald-pulse',
-  'violet-drift',
-  'silver-orbit',
-] as const;
-
-export type PlanetTheme = (typeof PLANET_THEMES)[number];
+// Theme is now a reference to the Theme model (ObjectId)
+export type PlanetTheme = string;
 
 export interface CreatePlanetInput {
   title: string;
   description?: string;
-  theme: PlanetTheme;
+  theme: string; // Theme ObjectId
 }
 
 export interface UpdatePlanetInput {
   title?: string;
   description?: string;
-  theme?: PlanetTheme;
+  theme?: string; // Theme ObjectId
 }
 
 export interface PlanetResponse {
@@ -43,18 +35,4 @@ export interface LevelUpEvent {
   newLevel: number;
   userId: string;
   planetTitle: string;
-}
-
-export interface ThemeInfo {
-  name: PlanetTheme;
-  colors: {
-    primary: string;
-    secondary: string;
-    glow: string;
-    atmosphere: string;
-    accent: string;
-    shadow: string;
-    textPrimary: string;
-    textSecondary: string;
-  };
 }

@@ -10,7 +10,8 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "test": "echo \"No tests yet\"",
-    "format": "prettier --check \"src/**/*.ts\""
+    "format": "prettier --check \"src/**/*.ts\"",
+    "seed:themes": "tsx src/utils/seed-themes.ts"
   },
   "author": "Yousef Mohamed",
   "license": "ISC",

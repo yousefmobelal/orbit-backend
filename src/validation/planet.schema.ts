@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { PLANET_THEMES } from '@/types/planet';
 
 export const createPlanetSchema = z.object({
   body: z.object({
@@ -9,7 +8,9 @@ export const createPlanetSchema = z.object({
       .max(40, 'Planet title must be less than 40 characters long')
       .trim(),
     description: z.string().trim().optional(),
-    theme: z.enum(PLANET_THEMES),
+    theme: z.string().refine((value) => /^[0-9a-fA-F]{24}$/.test(value), {
+      message: 'Invalid theme ID format',
+    }),
   }),
 });
 
@@ -22,7 +23,12 @@ export const updatePlanetSchema = z.object({
       .trim()
       .optional(),
     description: z.string().trim().optional(),
-    theme: z.enum(PLANET_THEMES).optional(),
+    theme: z
+      .string()
+      .refine((value) => /^[0-9a-fA-F]{24}$/.test(value), {
+        message: 'Invalid theme ID format',
+      })
+      .optional(),
   }),
 });
 
