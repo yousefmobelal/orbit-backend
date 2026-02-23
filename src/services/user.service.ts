@@ -2,6 +2,7 @@ import User from '@/models/user.model';
 import { UserLevelUpEvent, UserType } from '@/types/user';
 import { HttpError } from '@/utils/http-error';
 import { calculateUserXPForNextLevel } from '@/config/progression';
+import cloudinaryV2 from '@/config/cloudinary';
 
 /**
  * XP Distribution Strategy: DUPLICATE
@@ -89,13 +90,88 @@ export const getMe = async (userId: string): Promise<UserType> => {
     return {
       id: user._id.toString(),
       name: user.name,
+      avatar: user.avatar,
       email: user.email,
       globalStreak: user.globalStreak,
       lastActiveDate: user.lastActiveDate,
       globalXP: user.globalXP,
       globalLevel: user.globalLevel,
+      hasCreatedFirstTask: user.hasCreatedFirstTask,
     };
   } catch (error) {
     throw error;
+  }
+};
+
+export const updateProfile = async (
+  userId: string,
+  input: { name?: string; avatar?: { url: string; public_id: string } },
+  oldAvatar?: { public_id: string },
+): Promise<UserType> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new HttpError('User not found', 404);
+  }
+
+  if (input.name !== undefined) {
+    user.name = input.name;
+  }
+
+  if (input.avatar !== undefined) {
+    // Delete old avatar from Cloudinary if exists
+    if (oldAvatar?.public_id || user.avatar?.public_id) {
+      const publicIdToDelete = oldAvatar?.public_id || user.avatar?.public_id;
+      if (publicIdToDelete) {
+        try {
+          await cloudinaryV2.uploader.destroy(publicIdToDelete);
+        } catch (error) {
+          console.error('Failed to delete old avatar:', error);
+          // Continue even if deletion fails
+        }
+      }
+    }
+
+    user.avatar = input.avatar;
+  }
+
+  await user.save();
+
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    avatar: user.avatar,
+    email: user.email,
+    globalStreak: user.globalStreak,
+    lastActiveDate: user.lastActiveDate,
+    globalXP: user.globalXP,
+    globalLevel: user.globalLevel,
+    hasCreatedFirstTask: user.hasCreatedFirstTask,
+  };
+};
+
+export const uploadAvatarToCloudinary = async (
+  filePath: string,
+): Promise<{ url: string; public_id: string }> => {
+  try {
+    const result = await cloudinaryV2.uploader.upload(filePath, {
+      folder: 'avatars',
+      transformation: [
+        { width: 200, height: 200, crop: 'fill', gravity: 'face' },
+        { quality: 'auto:good' },
+      ],
+    });
+
+    return {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+  } catch (error: any) {
+    console.error('Cloudinary upload error:', error);
+
+    if (error.message?.includes('Invalid Signature')) {
+      throw new HttpError('Image upload configuration error. Please contact support.', 500);
+    }
+
+    throw new HttpError(error.message || 'Failed to upload image', 500);
   }
 };

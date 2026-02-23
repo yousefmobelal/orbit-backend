@@ -4,6 +4,10 @@ import bcrypt from 'bcrypt';
 
 interface IUser extends Document {
   name: string;
+  avatar?: {
+    url: string;
+    public_id: string;
+  };
   globalStreak: number;
   lastActiveDate: Date;
   globalXP: number;
@@ -23,6 +27,14 @@ const userSchema = new mongoose.Schema<IUser>(
       trim: true,
       maxlength: [40, 'Name must have less or equal than 40 characters'],
       minlength: [3, 'Name must have more or equal than 3 characters'],
+    },
+    avatar: {
+      url: {
+        type: String,
+      },
+      public_id: {
+        type: String,
+      },
     },
     globalStreak: {
       type: Number,
