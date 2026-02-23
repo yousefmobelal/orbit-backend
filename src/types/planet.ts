@@ -36,3 +36,8 @@ export interface LevelUpEvent {
   userId: string;
   planetTitle: string;
 }
+
+export interface PlanetCreationResult {
+  planet: any;
+  narrative: any;
+}

@@ -5,6 +5,7 @@ export interface UserType {
   lastActiveDate: Date;
   globalXP: number;
   globalLevel: number;
+  hasCreatedFirstTask: boolean;
   email: string;
 }
 

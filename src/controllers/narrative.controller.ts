@@ -1,5 +1,7 @@
 import { getUserNarratives, getLatestNarrative } from '@/services/narrative.service';
 import { asyncHandler } from '@/utils/async-handler';
+import { ResponseStatus } from '@/types/response';
+import { NarrativeResponse } from '@/types/narrative';
 import type { Request, Response } from 'express';
 
 /**
@@ -11,14 +13,12 @@ export const getNarratives = asyncHandler(async (req: Request, res: Response) =>
   const userId = req.user!._id;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
 
-  const narratives = await getUserNarratives(userId, limit);
+  const narratives: NarrativeResponse[] = await getUserNarratives(userId, limit);
 
   res.status(200).json({
-    status: 'success',
+    status: ResponseStatus.SUCCESS,
     results: narratives.length,
-    data: {
-      narratives,
-    },
+    data: narratives,
   });
 });
 
@@ -30,12 +30,10 @@ export const getNarratives = asyncHandler(async (req: Request, res: Response) =>
 export const getLatest = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!._id;
 
-  const narrative = await getLatestNarrative(userId);
+  const narrative: NarrativeResponse | null = await getLatestNarrative(userId);
 
   res.status(200).json({
-    status: 'success',
-    data: {
-      narrative,
-    },
+    status: ResponseStatus.SUCCESS,
+    data: narrative,
   });
 });

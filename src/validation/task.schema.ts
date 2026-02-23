@@ -28,6 +28,7 @@ export const updateTaskSchema = z.object({
     description: z.string().trim().optional(),
     difficulty: z.enum(TASK_DIFFICULTIES).optional(),
     recurring: z.enum(RECURRING_PATTERNS).optional(),
+    isCompleted: z.boolean().optional(),
   }),
 });
 

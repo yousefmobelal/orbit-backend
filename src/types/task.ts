@@ -59,6 +59,49 @@ export interface TaskCompletionResult {
   narratives?: NarrativeResponse[];
 }
 
+export interface TaskCreationResult {
+  task: TaskResponse;
+  xpEarned?: {
+    planetXP: number;
+    userXP: number;
+    firstTaskBonus?: number;
+  };
+  newPlanetXP?: number;
+  newPlanetLevel?: number;
+  planetLevelUpEvent?: LevelUpEvent;
+  userStats?: {
+    globalXP: number;
+    globalLevel: number;
+  };
+  userLevelUpEvent?: UserLevelUpEvent;
+}
+
+export interface TaskUpdateResult {
+  task: TaskResponse;
+  xpEarned?: {
+    planetXP: number;
+    userXP: number;
+  };
+  newPlanetXP?: number;
+  newPlanetLevel?: number;
+  planetLevelUpEvent?: LevelUpEvent;
+  userStats?: {
+    globalXP: number;
+    globalLevel: number;
+  };
+  userLevelUpEvent?: UserLevelUpEvent;
+}
+
+export interface TaskArchiveResult {
+  task: TaskResponse;
+  xpDeducted?: {
+    planetXP: number;
+    userXP: number;
+  };
+  newPlanetXP?: number;
+  newUserXP?: number;
+}
+
 export interface RecurringTaskCooldown {
   canComplete: boolean;
   reason?: string;

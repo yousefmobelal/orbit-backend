@@ -5,20 +5,27 @@ import {
   register,
   revokeRefreshToken,
 } from '@/services/auth.service';
-import { LoginInput, RegisterInput } from '@/types/auth';
+import { LoginInput, RegisterInput, AuthTokens } from '@/types/auth';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
+import { ResponseStatus } from '@/types/response';
 
 export const loginHandler = asyncHandler(async (req, res) => {
   const payload = req.body as LoginInput;
-  const tokens = await login(payload);
-  res.status(200).json(tokens);
+  const tokens: AuthTokens = await login(payload);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: tokens,
+  });
 });
 
 export const registerHandler = asyncHandler(async (req, res) => {
   const payload = req.body as RegisterInput;
-  const tokens = await register(payload);
-  res.status(201).json(tokens);
+  const tokens: AuthTokens = await register(payload);
+  res.status(201).json({
+    status: ResponseStatus.SUCCESS,
+    data: tokens,
+  });
 });
 
 export const refreshTokenHandler = asyncHandler(async (req, res) => {
@@ -26,8 +33,11 @@ export const refreshTokenHandler = asyncHandler(async (req, res) => {
   if (!refreshToken) {
     throw new HttpError('Refresh token is required', 400);
   }
-  const tokens = await refreshTokens(refreshToken);
-  res.json(tokens);
+  const tokens: AuthTokens = await refreshTokens(refreshToken);
+  res.json({
+    status: ResponseStatus.SUCCESS,
+    data: tokens,
+  });
 });
 
 export const logoutHandler = asyncHandler(async (req, res) => {

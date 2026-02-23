@@ -8,6 +8,12 @@ export const PROGRESSION = {
     MEDIUM: 30,
     HARD: 60,
   },
+  USER_TASK_XP: {
+    EASY: 5,
+    MEDIUM: 10,
+    HARD: 20,
+  },
+  FIRST_TASK_BONUS: 155,
   MAX_PLANETS_PER_USER: 6,
 } as const;
 
@@ -24,6 +30,15 @@ export const getTaskXP = (difficulty: 'easy' | 'medium' | 'hard'): number => {
     easy: PROGRESSION.TASK_XP.EASY,
     medium: PROGRESSION.TASK_XP.MEDIUM,
     hard: PROGRESSION.TASK_XP.HARD,
+  };
+  return xpMap[difficulty];
+};
+
+export const getUserTaskXP = (difficulty: 'easy' | 'medium' | 'hard'): number => {
+  const xpMap = {
+    easy: PROGRESSION.USER_TASK_XP.EASY,
+    medium: PROGRESSION.USER_TASK_XP.MEDIUM,
+    hard: PROGRESSION.USER_TASK_XP.HARD,
   };
   return xpMap[difficulty];
 };

@@ -1,16 +1,25 @@
 import Planet from '@/models/planet.model';
 import Task from '@/models/task.model';
+import User from '@/models/user.model';
 import {
   CreateTaskInput,
   RecurringPattern,
   RecurringTaskCooldown,
   TaskCompletionResult,
   TaskCompletionStatus,
+  TaskCreationResult,
+  TaskUpdateResult,
+  TaskArchiveResult,
   UpdateTaskInput,
 } from '@/types/task';
 import { LevelUpEvent } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
-import { getTaskXP, calculatePlanetXPForNextLevel } from '@/config/progression';
+import {
+  getTaskXP,
+  getUserTaskXP,
+  calculatePlanetXPForNextLevel,
+  PROGRESSION,
+} from '@/config/progression';
 import { addGlobalXP, updateUserGlobalStreak } from './user.service';
 import { createNarrative } from './narrative.service';
 
@@ -169,7 +178,10 @@ const updatePlanetProgress = async (
   return { planet: planet.toObject(), streak: planet.streakCount, levelUpEvent };
 };
 
-export const createTask = async (userId: string, input: CreateTaskInput) => {
+export const createTask = async (
+  userId: string,
+  input: CreateTaskInput,
+): Promise<TaskCreationResult> => {
   // Verify planet exists and belongs to user
   const planet = await Planet.findOne({ _id: input.planetId, userId });
   if (!planet) {
@@ -194,7 +206,65 @@ export const createTask = async (userId: string, input: CreateTaskInput) => {
     order,
   });
 
-  return task;
+  // Award XP for task creation
+  const planetXP = getTaskXP(task.difficulty);
+  let userXP = getUserTaskXP(task.difficulty);
+  let firstTaskBonus = 0;
+
+  // Check if this is user's first task ever
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new HttpError('User not found', 404);
+  }
+
+  if (!user.hasCreatedFirstTask) {
+    firstTaskBonus = PROGRESSION.FIRST_TASK_BONUS;
+    userXP += firstTaskBonus;
+    user.hasCreatedFirstTask = true;
+    await user.save();
+  }
+
+  // Update planet XP and check for level up
+  planet.xp += planetXP;
+  let planetLevelUpEvent: LevelUpEvent | null = null;
+  const requiredXP = calculatePlanetXPForNextLevel(planet.level);
+
+  if (planet.xp >= requiredXP) {
+    const previousLevel = planet.level;
+    planet.level += 1;
+    planet.xp -= requiredXP;
+
+    planetLevelUpEvent = {
+      planetId: planet._id.toString(),
+      previousLevel,
+      newLevel: planet.level,
+      userId,
+      planetTitle: planet.title,
+    };
+  }
+  await planet.save();
+
+  // Update user global XP and check for level up
+  const { user: updatedUser, levelUpEvent: userLevelUpEvent } = await addGlobalXP(userId, userXP);
+
+  const result: TaskCreationResult = {
+    task: task.toObject() as any,
+    xpEarned: {
+      planetXP,
+      userXP: getUserTaskXP(task.difficulty),
+      firstTaskBonus: firstTaskBonus > 0 ? firstTaskBonus : undefined,
+    },
+    newPlanetXP: planet.xp,
+    newPlanetLevel: planet.level,
+    planetLevelUpEvent: planetLevelUpEvent || undefined,
+    userStats: {
+      globalXP: updatedUser.globalXP,
+      globalLevel: updatedUser.globalLevel,
+    },
+    userLevelUpEvent: userLevelUpEvent || undefined,
+  };
+
+  return result;
 };
 
 export const getUserTasks = async (userId: string, planetId?: string) => {
@@ -226,19 +296,89 @@ export const getTaskById = async (taskId: string, userId: string) => {
   return task;
 };
 
-export const updateTask = async (taskId: string, userId: string, input: UpdateTaskInput) => {
-  const task = await Task.findOne({ _id: taskId, userId });
+export const updateTask = async (
+  taskId: string,
+  userId: string,
+  input: UpdateTaskInput,
+): Promise<TaskUpdateResult> => {
+  console.log(JSON.stringify(input));
+
+  // Get the task before update to check old difficulty
+  const oldTask = await Task.findOne({ _id: taskId, userId });
+  if (!oldTask) {
+    throw new HttpError('Task not found', 404);
+  }
+
+  const oldDifficulty = oldTask.difficulty;
+
+  // Update task
+  const task = await Task.findOneAndUpdate({ _id: taskId, userId }, input, {
+    returnDocument: 'after',
+    runValidators: true,
+  });
   if (!task) {
     throw new HttpError('Task not found', 404);
   }
 
-  if (input.title !== undefined) task.title = input.title;
-  if (input.description !== undefined) task.description = input.description;
-  if (input.difficulty !== undefined) task.difficulty = input.difficulty;
-  if (input.recurring !== undefined) task.recurring = input.recurring;
+  // Check if difficulty changed
+  const difficultyChanged = input.difficulty && input.difficulty !== oldDifficulty;
 
-  await task.save();
-  return task;
+  if (!difficultyChanged) {
+    // No difficulty change, return basic result
+    return {
+      task: task.toObject() as any,
+    };
+  }
+
+  // Difficulty changed, award XP
+  const planetXP = getTaskXP(task.difficulty);
+  const userXP = getUserTaskXP(task.difficulty);
+
+  // Update planet XP and check for level up
+  const planet = await Planet.findOne({ _id: task.planetId, userId });
+  if (!planet) {
+    throw new HttpError('Planet not found', 404);
+  }
+
+  planet.xp += planetXP;
+  let planetLevelUpEvent: LevelUpEvent | null = null;
+  const requiredXP = calculatePlanetXPForNextLevel(planet.level);
+
+  if (planet.xp >= requiredXP) {
+    const previousLevel = planet.level;
+    planet.level += 1;
+    planet.xp -= requiredXP;
+
+    planetLevelUpEvent = {
+      planetId: planet._id.toString(),
+      previousLevel,
+      newLevel: planet.level,
+      userId,
+      planetTitle: planet.title,
+    };
+  }
+  await planet.save();
+
+  // Update user global XP and check for level up
+  const { user: updatedUser, levelUpEvent: userLevelUpEvent } = await addGlobalXP(userId, userXP);
+
+  const result: TaskUpdateResult = {
+    task: task.toObject() as any,
+    xpEarned: {
+      planetXP,
+      userXP,
+    },
+    newPlanetXP: planet.xp,
+    newPlanetLevel: planet.level,
+    planetLevelUpEvent: planetLevelUpEvent || undefined,
+    userStats: {
+      globalXP: updatedUser.globalXP,
+      globalLevel: updatedUser.globalLevel,
+    },
+    userLevelUpEvent: userLevelUpEvent || undefined,
+  };
+
+  return result;
 };
 
 export const completeTask = async (
@@ -396,12 +536,49 @@ export const completeTask = async (
   return result;
 };
 
-export const archiveTask = async (taskId: string, userId: string) => {
+export const archiveTask = async (taskId: string, userId: string): Promise<TaskArchiveResult> => {
   const task = await Task.findOne({ _id: taskId, userId });
   if (!task) {
     throw new HttpError('Task not found', 404);
   }
 
+  // Check if task is uncompleted - only deduct XP for uncompleted tasks
+  let xpDeducted: { planetXP: number; userXP: number } | undefined;
+  let newPlanetXP: number | undefined;
+  let newUserXP: number | undefined;
+
+  if (!task.isCompleted) {
+    // Calculate XP to deduct
+    const planetXP = getTaskXP(task.difficulty);
+    const userXP = getUserTaskXP(task.difficulty);
+
+    // Deduct from planet
+    const planet = await Planet.findOne({ _id: task.planetId, userId });
+    if (planet) {
+      planet.xp = Math.max(0, planet.xp - planetXP); // Don't go below 0
+      await planet.save();
+      newPlanetXP = planet.xp;
+    }
+
+    // Deduct from user
+    const user = await User.findById(userId);
+    if (user) {
+      user.globalXP = Math.max(0, user.globalXP - userXP); // Don't go below 0
+      await user.save();
+      newUserXP = user.globalXP;
+    }
+
+    xpDeducted = { planetXP, userXP };
+  }
+
+  // Archive task
   task.isArchived = true;
   await task.save();
+
+  return {
+    task: task.toObject() as any,
+    xpDeducted,
+    newPlanetXP,
+    newUserXP,
+  };
 };

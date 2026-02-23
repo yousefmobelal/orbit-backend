@@ -7,9 +7,18 @@ import {
   getUserTasks,
   updateTask,
 } from '@/services/task.service';
-import { CreateTaskInput, UpdateTaskInput } from '@/types/task';
+import {
+  CreateTaskInput,
+  UpdateTaskInput,
+  TaskCreationResult,
+  TaskUpdateResult,
+  TaskArchiveResult,
+  TaskCompletionResult,
+  TaskResponse,
+} from '@/types/task';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
+import { ResponseStatus } from '@/types/response';
 
 export const createTaskHandler = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -17,8 +26,12 @@ export const createTaskHandler = asyncHandler(async (req, res) => {
   }
 
   const payload = req.body as CreateTaskInput;
-  const task = await createTask(req.user._id.toString(), payload);
-  res.status(201).json(task);
+  const result: TaskCreationResult = await createTask(req.user._id.toString(), payload);
+
+  res.status(201).json({
+    status: ResponseStatus.SUCCESS,
+    data: result,
+  });
 });
 
 export const getUserTasksHandler = asyncHandler(async (req, res) => {
@@ -28,7 +41,10 @@ export const getUserTasksHandler = asyncHandler(async (req, res) => {
 
   const planetId = req.query.planetId as string | undefined;
   const tasks = await getUserTasks(req.user._id.toString(), planetId);
-  res.status(200).json(tasks);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: tasks,
+  });
 });
 
 export const getPlanetTasksHandler = asyncHandler(async (req, res) => {
@@ -38,7 +54,10 @@ export const getPlanetTasksHandler = asyncHandler(async (req, res) => {
 
   const planetId = req.params.planetId as string;
   const tasks = await getPlanetTasks(planetId, req.user._id.toString());
-  res.status(200).json(tasks);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: tasks,
+  });
 });
 
 export const getTaskHandler = asyncHandler(async (req, res) => {
@@ -48,7 +67,10 @@ export const getTaskHandler = asyncHandler(async (req, res) => {
 
   const id = req.params.id as string;
   const task = await getTaskById(id, req.user._id.toString());
-  res.status(200).json(task);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: task,
+  });
 });
 
 export const updateTaskHandler = asyncHandler(async (req, res) => {
@@ -58,8 +80,11 @@ export const updateTaskHandler = asyncHandler(async (req, res) => {
 
   const id = req.params.id as string;
   const payload = req.body as UpdateTaskInput;
-  const task = await updateTask(id, req.user._id.toString(), payload);
-  res.status(200).json(task);
+  const result: TaskUpdateResult = await updateTask(id, req.user._id.toString(), payload);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: result,
+  });
 });
 
 export const completeTaskHandler = asyncHandler(async (req, res) => {
@@ -68,8 +93,11 @@ export const completeTaskHandler = asyncHandler(async (req, res) => {
   }
 
   const id = req.params.id as string;
-  const result = await completeTask(id, req.user._id.toString());
-  res.status(200).json(result);
+  const result: TaskCompletionResult = await completeTask(id, req.user._id.toString());
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: result,
+  });
 });
 
 export const archiveTaskHandler = asyncHandler(async (req, res) => {
@@ -78,6 +106,9 @@ export const archiveTaskHandler = asyncHandler(async (req, res) => {
   }
 
   const id = req.params.id as string;
-  await archiveTask(id, req.user._id.toString());
-  res.status(204).send();
+  const result: TaskArchiveResult = await archiveTask(id, req.user._id.toString());
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: result,
+  });
 });

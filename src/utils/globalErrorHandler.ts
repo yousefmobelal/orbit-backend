@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, Response } from 'express';
 import { HttpError } from './http-error';
+import { ResponseStatus } from '@/types/response';
 
 interface MongooseCastError extends Error {
   path: string;
@@ -46,7 +47,7 @@ const sendErrorProd = (err: HttpError, res: Response): void => {
   // Operational trusted error: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
-      status: err.status,
+      status: ResponseStatus.FAIL,
       message: err.message,
     });
   }
@@ -58,7 +59,7 @@ const sendErrorProd = (err: HttpError, res: Response): void => {
 
     //2) Send Error
     res.status(500).json({
-      status: 'error',
+      status: ResponseStatus.FAIL,
       message: 'Something went wrong',
     });
   }

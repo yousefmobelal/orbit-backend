@@ -5,9 +5,10 @@ import {
   getUserPlanets,
   updatePlanet,
 } from '@/services/planet.service';
-import { CreatePlanetInput, UpdatePlanetInput } from '@/types/planet';
+import { CreatePlanetInput, UpdatePlanetInput, PlanetCreationResult } from '@/types/planet';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
+import { ResponseStatus } from '@/types/response';
 
 export const createPlanetHandler = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -15,8 +16,11 @@ export const createPlanetHandler = asyncHandler(async (req, res) => {
   }
 
   const payload = req.body as CreatePlanetInput;
-  const { planet, narrative } = await createPlanet(req.user._id.toString(), payload);
-  res.status(201).json({ planet, narrative });
+  const result: PlanetCreationResult = await createPlanet(req.user._id.toString(), payload);
+  res.status(201).json({
+    status: ResponseStatus.SUCCESS,
+    data: result,
+  });
 });
 
 export const getUserPlanetsHandler = asyncHandler(async (req, res) => {
@@ -25,7 +29,10 @@ export const getUserPlanetsHandler = asyncHandler(async (req, res) => {
   }
 
   const planets = await getUserPlanets(req.user._id.toString());
-  res.status(200).json(planets);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: planets,
+  });
 });
 
 export const getPlanetHandler = asyncHandler(async (req, res) => {
@@ -35,7 +42,10 @@ export const getPlanetHandler = asyncHandler(async (req, res) => {
 
   const id = req.params.id as string;
   const planet = await getPlanetById(id, req.user._id.toString());
-  res.status(200).json(planet);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: planet,
+  });
 });
 
 export const updatePlanetHandler = asyncHandler(async (req, res) => {
@@ -46,7 +56,10 @@ export const updatePlanetHandler = asyncHandler(async (req, res) => {
   const id = req.params.id as string;
   const payload = req.body as UpdatePlanetInput;
   const planet = await updatePlanet(id, req.user._id.toString(), payload);
-  res.status(200).json(planet);
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    data: planet,
+  });
 });
 
 export const archivePlanetHandler = asyncHandler(async (req, res) => {

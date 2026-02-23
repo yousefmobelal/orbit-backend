@@ -8,6 +8,7 @@ interface IUser extends Document {
   lastActiveDate: Date;
   globalXP: number;
   globalLevel: number;
+  hasCreatedFirstTask: boolean;
   isPublic: boolean;
   email: string;
   password: string;
@@ -42,6 +43,10 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Number,
       default: 1,
       min: 1,
+    },
+    hasCreatedFirstTask: {
+      type: Boolean,
+      default: false,
     },
     isPublic: {
       type: Boolean,
