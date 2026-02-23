@@ -1,4 +1,8 @@
 import User from '@/models/user.model';
+import Task from '@/models/task.model';
+import Planet from '@/models/planet.model';
+import Narrative from '@/models/narrative.model';
+import RefreshToken from '@/models/refreshToken.model';
 import { UserLevelUpEvent, UserType } from '@/types/user';
 import { HttpError } from '@/utils/http-error';
 import { calculateUserXPForNextLevel } from '@/config/progression';
@@ -173,5 +177,68 @@ export const uploadAvatarToCloudinary = async (
     }
 
     throw new HttpError(error.message || 'Failed to upload image', 500);
+  }
+};
+
+export const deleteProfile = async (userId: string, password: string): Promise<void> => {
+  // 1. Verify user exists and password is correct
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new HttpError('User not found', 404);
+  }
+
+  const isPasswordCorrect = await user.correctPassword(password, user.password);
+  if (!isPasswordCorrect) {
+    throw new HttpError('Incorrect password', 401);
+  }
+
+  // 2. Delete all refresh tokens (invalidate all sessions)
+  try {
+    await RefreshToken.deleteMany({ userId });
+  } catch (error) {
+    console.error('Failed to delete refresh tokens:', error);
+    throw new HttpError('Failed to delete user sessions', 500);
+  }
+
+  // 3. Delete all tasks
+  try {
+    await Task.deleteMany({ userId });
+  } catch (error) {
+    console.error('Failed to delete tasks:', error);
+    throw new HttpError('Failed to delete user tasks', 500);
+  }
+
+  // 4. Delete all planets
+  try {
+    await Planet.deleteMany({ userId });
+  } catch (error) {
+    console.error('Failed to delete planets:', error);
+    throw new HttpError('Failed to delete user planets', 500);
+  }
+
+  // 5. Delete all narratives
+  try {
+    await Narrative.deleteMany({ userId });
+  } catch (error) {
+    console.error('Failed to delete narratives:', error);
+    throw new HttpError('Failed to delete user narratives', 500);
+  }
+
+  // 6. Delete avatar from Cloudinary (non-blocking)
+  if (user.avatar?.public_id) {
+    try {
+      await cloudinaryV2.uploader.destroy(user.avatar.public_id);
+    } catch (error) {
+      console.error('Failed to delete avatar from Cloudinary:', error);
+      // Don't throw - continue with account deletion
+    }
+  }
+
+  // 7. Delete user document
+  try {
+    await User.findByIdAndDelete(userId);
+  } catch (error) {
+    console.error('Failed to delete user:', error);
+    throw new HttpError('Failed to delete user account', 500);
   }
 };

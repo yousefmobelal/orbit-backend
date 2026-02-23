@@ -1,5 +1,10 @@
 import User from '@/models/user.model';
-import { getMe, updateProfile, uploadAvatarToCloudinary } from '@/services/user.service';
+import {
+  getMe,
+  updateProfile,
+  uploadAvatarToCloudinary,
+  deleteProfile,
+} from '@/services/user.service';
 import { UserType, UpdateProfileInput } from '@/types/user';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
@@ -44,5 +49,21 @@ export const updateProfileHandler = asyncHandler(async (req, res) => {
   res.json({
     status: ResponseStatus.SUCCESS,
     data: user,
+  });
+});
+
+export const deleteProfileHandler = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new HttpError('Authentication required', 401);
+  }
+
+  const { password } = req.body;
+
+  // Delete user profile and all related data
+  await deleteProfile(req.user._id.toString(), password);
+
+  res.status(200).json({
+    status: ResponseStatus.SUCCESS,
+    message: 'Your account has been successfully deleted',
   });
 });

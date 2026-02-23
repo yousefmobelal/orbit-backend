@@ -9,3 +9,12 @@ export const updateProfileSchema = z.object({
       .optional(),
   }),
 });
+
+export const deleteProfileSchema = z.object({
+  body: z.object({
+    password: z.string().min(1, 'Password is required'),
+    confirmation: z.string().refine((val) => val === 'DELETE', {
+      message: 'You must type DELETE to confirm account deletion',
+    }),
+  }),
+});
