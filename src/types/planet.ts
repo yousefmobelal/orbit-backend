@@ -21,6 +21,9 @@ export interface PlanetResponse {
   theme: string;
   level: number;
   xp: number;
+  requiredXPForNextLevel: number;
+  xpToNextLevel: number;
+  xpProgressPercent: number;
   streakCount: number;
   lastCompletedDate?: Date;
   order: number;

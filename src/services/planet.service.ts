@@ -1,9 +1,35 @@
 import mongoose from 'mongoose';
 import Planet from '@/models/planet.model';
-import { CreatePlanetInput, LevelUpEvent, UpdatePlanetInput } from '@/types/planet';
+import { CreatePlanetInput, LevelUpEvent, PlanetResponse, UpdatePlanetInput } from '@/types/planet';
 import { HttpError } from '@/utils/http-error';
 import { PROGRESSION, calculatePlanetXPForNextLevel } from '@/config/progression';
 import { createNarrative } from './narrative.service';
+
+const mapPlanetToResponse = (planet: any): PlanetResponse => {
+  const doc = planet.toObject ? planet.toObject() : planet;
+  const requiredXPForNextLevel = calculatePlanetXPForNextLevel(doc.level);
+  const xpToNextLevel = Math.max(0, requiredXPForNextLevel - doc.xp);
+  const xpProgressPercent = requiredXPForNextLevel > 0 ? doc.xp / requiredXPForNextLevel : 0;
+
+  return {
+    _id: doc._id.toString(),
+    userId: doc.userId.toString(),
+    title: doc.title,
+    description: doc.description,
+    theme: doc.theme,
+    level: doc.level,
+    xp: doc.xp,
+    requiredXPForNextLevel,
+    xpToNextLevel,
+    xpProgressPercent,
+    streakCount: doc.streakCount,
+    lastCompletedDate: doc.lastCompletedDate,
+    order: doc.order,
+    isArchived: doc.isArchived,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+};
 
 export const createPlanet = async (userId: string, input: CreatePlanetInput) => {
   const planetCount = await Planet.countDocuments({ userId, isArchived: false });
@@ -36,26 +62,32 @@ export const createPlanet = async (userId: string, input: CreatePlanetInput) => 
 
   await planet.populate('theme');
 
-  return { planet: planet.toObject(), narrative };
+  return { planet: mapPlanetToResponse(planet), narrative };
 };
 
-export const getUserPlanets = async (userId: string) => {
+export const getUserPlanets = async (userId: string): Promise<PlanetResponse[]> => {
   const planets = await Planet.find({ userId, isArchived: false })
     .sort({ order: 1 })
     .populate('theme')
     .lean();
-  return planets;
+
+  return planets.map((planet) => mapPlanetToResponse(planet));
 };
 
-export const getPlanetById = async (planetId: string, userId: string) => {
+export const getPlanetById = async (planetId: string, userId: string): Promise<PlanetResponse> => {
   const planet = await Planet.findOne({ _id: planetId, userId }).populate('theme').lean();
   if (!planet) {
     throw new HttpError('Planet not found', 404);
   }
-  return planet;
+
+  return mapPlanetToResponse(planet);
 };
 
-export const updatePlanet = async (planetId: string, userId: string, input: UpdatePlanetInput) => {
+export const updatePlanet = async (
+  planetId: string,
+  userId: string,
+  input: UpdatePlanetInput,
+): Promise<PlanetResponse> => {
   const planet = await Planet.findOne({ _id: planetId, userId });
   if (!planet) {
     throw new HttpError('Planet not found', 404);
@@ -67,7 +99,8 @@ export const updatePlanet = async (planetId: string, userId: string, input: Upda
 
   await planet.save();
   await planet.populate('theme');
-  return planet;
+
+  return mapPlanetToResponse(planet);
 };
 
 export const archivePlanet = async (planetId: string, userId: string) => {

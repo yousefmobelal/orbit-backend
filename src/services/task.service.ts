@@ -188,6 +188,15 @@ export const createTask = async (
     throw new HttpError('Planet not found', 404);
   }
 
+  const activeCount = await Task.countDocuments({
+    planetId: input.planetId,
+    isArchived: false,
+    isCompleted: false,
+  });
+  if (activeCount >= 10) {
+    throw new HttpError('A planet can have at most 10 active tasks', 400);
+  }
+
   // Get next order number
   const maxOrder = await Task.findOne({ planetId: input.planetId })
     .sort({ order: -1 })

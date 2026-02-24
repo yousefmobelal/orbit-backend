@@ -9,6 +9,9 @@ export interface UserType {
   lastActiveDate: Date;
   globalXP: number;
   globalLevel: number;
+  requiredXPForNextLevel: number;
+  xpToNextLevel: number;
+  xpProgressPercent: number;
   hasCreatedFirstTask: boolean;
   email: string;
 }

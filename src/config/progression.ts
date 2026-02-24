@@ -13,7 +13,7 @@ export const PROGRESSION = {
     MEDIUM: 10,
     HARD: 20,
   },
-  FIRST_TASK_BONUS: 155,
+  FIRST_TASK_BONUS: 15,
   MAX_PLANETS_PER_USER: 6,
 } as const;
 

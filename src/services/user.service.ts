@@ -91,6 +91,10 @@ export const getMe = async (userId: string): Promise<UserType> => {
     if (!user) {
       throw new HttpError('User not found', 404);
     }
+    const requiredXPForNextLevel = calculateUserXPForNextLevel(user.globalLevel);
+    const xpToNextLevel = Math.max(0, requiredXPForNextLevel - user.globalXP);
+    const xpProgressPercent =
+      requiredXPForNextLevel > 0 ? user.globalXP / requiredXPForNextLevel : 0;
     return {
       id: user._id.toString(),
       name: user.name,
@@ -100,6 +104,9 @@ export const getMe = async (userId: string): Promise<UserType> => {
       lastActiveDate: user.lastActiveDate,
       globalXP: user.globalXP,
       globalLevel: user.globalLevel,
+      requiredXPForNextLevel,
+      xpToNextLevel,
+      xpProgressPercent,
       hasCreatedFirstTask: user.hasCreatedFirstTask,
     };
   } catch (error) {
@@ -140,6 +147,10 @@ export const updateProfile = async (
 
   await user.save();
 
+  const requiredXPForNextLevel = calculateUserXPForNextLevel(user.globalLevel);
+  const xpToNextLevel = Math.max(0, requiredXPForNextLevel - user.globalXP);
+  const xpProgressPercent = requiredXPForNextLevel > 0 ? user.globalXP / requiredXPForNextLevel : 0;
+
   return {
     id: user._id.toString(),
     name: user.name,
@@ -149,6 +160,9 @@ export const updateProfile = async (
     lastActiveDate: user.lastActiveDate,
     globalXP: user.globalXP,
     globalLevel: user.globalLevel,
+    requiredXPForNextLevel,
+    xpToNextLevel,
+    xpProgressPercent,
     hasCreatedFirstTask: user.hasCreatedFirstTask,
   };
 };
