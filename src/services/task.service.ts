@@ -55,7 +55,7 @@ const canCompleteRecurringTask = (
 
       return {
         canComplete: false,
-        reason: `Task can be completed again in ${hoursRemaining} hour(s)`,
+        reason: `Task can be completed again in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''}`,
         availableAt,
         hoursRemaining,
       };
@@ -73,7 +73,7 @@ const canCompleteRecurringTask = (
 
       return {
         canComplete: false,
-        reason: `Task can be completed again in ${daysRemaining} day(s)`,
+        reason: `Task can be completed again in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`,
         availableAt,
         hoursRemaining: daysRemaining * 24,
       };
@@ -91,7 +91,7 @@ const canCompleteRecurringTask = (
 
       return {
         canComplete: false,
-        reason: `Task can be completed again in ${daysRemaining} day(s)`,
+        reason: `Task can be completed again in ${daysRemaining} day${daysRemaining > 1 ? 's' : ''}`,
         availableAt,
         hoursRemaining: daysRemaining * 24,
       };
