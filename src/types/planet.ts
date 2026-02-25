@@ -1,16 +1,17 @@
-// Theme is now a reference to the Theme model (ObjectId)
+import { NarrativeResponse } from './narrative';
+
 export type PlanetTheme = string;
 
 export interface CreatePlanetInput {
   title: string;
   description?: string;
-  theme: string; // Theme ObjectId
+  theme: string;
 }
 
 export interface UpdatePlanetInput {
   title?: string;
   description?: string;
-  theme?: string; // Theme ObjectId
+  theme?: string;
 }
 
 export interface PlanetResponse {
@@ -41,6 +42,6 @@ export interface LevelUpEvent {
 }
 
 export interface PlanetCreationResult {
-  planet: any;
-  narrative: any;
+  planet: PlanetResponse;
+  narrative: NarrativeResponse;
 }

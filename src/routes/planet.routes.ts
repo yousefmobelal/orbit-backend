@@ -12,27 +12,22 @@ import { Router } from 'express';
 
 export const planetRouter = Router();
 
-// All planet routes require authentication
 planetRouter.use(authenticate);
 
-// Create a new planet
 planetRouter.post(
   '/',
   validateRequest({ body: createPlanetSchema.shape.body }),
   createPlanetHandler,
 );
 
-// Get all user's planets
 planetRouter.get('/', getUserPlanetsHandler);
 
-// Get a specific planet
 planetRouter.get(
   '/:id',
   validateRequest({ params: planetIdSchema.shape.params }),
   getPlanetHandler,
 );
 
-// Update a planet
 planetRouter.patch(
   '/:id',
   validateRequest({
@@ -42,7 +37,6 @@ planetRouter.patch(
   updatePlanetHandler,
 );
 
-// Archive a planet (soft delete)
 planetRouter.delete(
   '/:id',
   validateRequest({ params: planetIdSchema.shape.params }),

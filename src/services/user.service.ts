@@ -7,18 +7,10 @@ import { UserLevelUpEvent, UserType } from '@/types/user';
 import { HttpError } from '@/utils/http-error';
 import { calculateUserXPForNextLevel } from '@/config/progression';
 import cloudinaryV2 from '@/config/cloudinary';
+import mongoose, { ClientSession } from 'mongoose';
+import { logger } from '@/utils/logger';
 
-/**
- * XP Distribution Strategy: DUPLICATE
- * - Task XP is given to BOTH planet and user
- * - Planet progression: Shows focused goal mastery (100 + level × 40)
- * - User progression: Shows overall productivity (200 + level × 80)
- * - Different formulas balance progression rates despite duplicate XP
- */
-
-export const updateUserGlobalStreak = async (
-  userId: string,
-): Promise<{ user: any; streak: number }> => {
+export const updateUserGlobalStreak = async (userId: string) => {
   const user = await User.findById(userId);
   if (!user) {
     throw new HttpError('User not found', 404);
@@ -50,28 +42,36 @@ export const updateUserGlobalStreak = async (
   }
 
   await user.save();
-  return { user: user.toObject(), streak: user.globalStreak };
 };
 
 export const addGlobalXP = async (
   userId: string,
   xpAmount: number,
+  session: ClientSession | null,
 ): Promise<{ user: any; levelUpEvent: UserLevelUpEvent | null }> => {
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).session(session);
   if (!user) {
     throw new HttpError('User not found', 404);
   }
 
   user.globalXP += xpAmount;
 
-  // Check for level up
+  if (user.globalXP < 0) {
+    if (user.globalLevel === 1) {
+      user.globalXP = 0;
+    } else {
+      user.globalLevel--;
+      user.globalXP += calculateUserXPForNextLevel(user.globalLevel);
+    }
+  }
+
   let levelUpEvent: UserLevelUpEvent | null = null;
   const requiredXP = calculateUserXPForNextLevel(user.globalLevel);
 
   if (user.globalXP >= requiredXP) {
     const previousLevel = user.globalLevel;
-    user.globalLevel += 1;
-    user.globalXP -= requiredXP; // Carry over remaining XP
+    user.globalLevel++;
+    user.globalXP -= requiredXP;
 
     levelUpEvent = {
       userId: user._id.toString(),
@@ -81,8 +81,9 @@ export const addGlobalXP = async (
     };
   }
 
-  await user.save();
-  return { user: user.toObject(), levelUpEvent };
+  await user.save({ session });
+
+  return { user, levelUpEvent };
 };
 
 export const getMe = async (userId: string): Promise<UserType> => {
@@ -114,35 +115,40 @@ export const getMe = async (userId: string): Promise<UserType> => {
   }
 };
 
-export const updateProfile = async (
-  userId: string,
-  input: { name?: string; avatar?: { url: string; public_id: string } },
-  oldAvatar?: { public_id: string },
-): Promise<UserType> => {
+export const updateProfile = async ({
+  userId,
+  name,
+  file,
+}: {
+  userId: string;
+  name?: string;
+  file?: Express.Multer.File;
+}): Promise<UserType> => {
   const user = await User.findById(userId);
   if (!user) {
     throw new HttpError('User not found', 404);
   }
 
-  if (input.name !== undefined) {
-    user.name = input.name;
+  if (name !== undefined) {
+    user.name = name;
   }
 
-  if (input.avatar !== undefined) {
-    // Delete old avatar from Cloudinary if exists
-    if (oldAvatar?.public_id || user.avatar?.public_id) {
-      const publicIdToDelete = oldAvatar?.public_id || user.avatar?.public_id;
-      if (publicIdToDelete) {
-        try {
-          await cloudinaryV2.uploader.destroy(publicIdToDelete);
-        } catch (error) {
-          console.error('Failed to delete old avatar:', error);
-          // Continue even if deletion fails
-        }
+  if (file) {
+    if (!file.path) {
+      throw new HttpError('File upload failed', 400);
+    }
+
+    const uploadedAvatar = await uploadAvatarToCloudinary(file.path);
+
+    if (user.avatar?.public_id) {
+      try {
+        await cloudinaryV2.uploader.destroy(user.avatar.public_id);
+      } catch (error) {
+        console.error('Failed to delete old avatar:', error);
       }
     }
 
-    user.avatar = input.avatar;
+    user.avatar = uploadedAvatar;
   }
 
   await user.save();
@@ -166,7 +172,6 @@ export const updateProfile = async (
     hasCreatedFirstTask: user.hasCreatedFirstTask,
   };
 };
-
 export const uploadAvatarToCloudinary = async (
   filePath: string,
 ): Promise<{ url: string; public_id: string }> => {
@@ -195,7 +200,6 @@ export const uploadAvatarToCloudinary = async (
 };
 
 export const deleteProfile = async (userId: string, password: string): Promise<void> => {
-  // 1. Verify user exists and password is correct
   const user = await User.findById(userId).select('+password');
   if (!user) {
     throw new HttpError('User not found', 404);
@@ -206,53 +210,33 @@ export const deleteProfile = async (userId: string, password: string): Promise<v
     throw new HttpError('Incorrect password', 401);
   }
 
-  // 2. Delete all refresh tokens (invalidate all sessions)
+  const session = await mongoose.startSession();
+
   try {
-    await RefreshToken.deleteMany({ userId });
+    session.startTransaction();
+
+    await Promise.all([
+      RefreshToken.deleteMany({ userId }).session(session),
+      Task.deleteMany({ userId }).session(session),
+      Planet.deleteMany({ userId }).session(session),
+      Narrative.deleteMany({ userId }).session(session),
+      User.findByIdAndDelete(userId).session(session),
+    ]);
+
+    await session.commitTransaction();
   } catch (error) {
-    console.error('Failed to delete refresh tokens:', error);
-    throw new HttpError('Failed to delete user sessions', 500);
+    await session.abortTransaction();
+    logger.error({ error }, 'Transaction failed');
+    throw new HttpError('Failed to delete user account', 500);
+  } finally {
+    session.endSession();
   }
 
-  // 3. Delete all tasks
-  try {
-    await Task.deleteMany({ userId });
-  } catch (error) {
-    console.error('Failed to delete tasks:', error);
-    throw new HttpError('Failed to delete user tasks', 500);
-  }
-
-  // 4. Delete all planets
-  try {
-    await Planet.deleteMany({ userId });
-  } catch (error) {
-    console.error('Failed to delete planets:', error);
-    throw new HttpError('Failed to delete user planets', 500);
-  }
-
-  // 5. Delete all narratives
-  try {
-    await Narrative.deleteMany({ userId });
-  } catch (error) {
-    console.error('Failed to delete narratives:', error);
-    throw new HttpError('Failed to delete user narratives', 500);
-  }
-
-  // 6. Delete avatar from Cloudinary (non-blocking)
   if (user.avatar?.public_id) {
     try {
       await cloudinaryV2.uploader.destroy(user.avatar.public_id);
     } catch (error) {
-      console.error('Failed to delete avatar from Cloudinary:', error);
-      // Don't throw - continue with account deletion
+      logger.error({ error }, 'Failed to delete avatar from Cloudinary');
     }
-  }
-
-  // 7. Delete user document
-  try {
-    await User.findByIdAndDelete(userId);
-  } catch (error) {
-    console.error('Failed to delete user:', error);
-    throw new HttpError('Failed to delete user account', 500);
   }
 };

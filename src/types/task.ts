@@ -8,21 +8,6 @@ export type TaskDifficulty = (typeof TASK_DIFFICULTIES)[number];
 export const RECURRING_PATTERNS = ['none', 'daily', 'weekly', 'monthly'] as const;
 export type RecurringPattern = (typeof RECURRING_PATTERNS)[number];
 
-export interface CreateTaskInput {
-  planetId: string;
-  title: string;
-  description?: string;
-  difficulty: TaskDifficulty;
-  recurring?: RecurringPattern;
-}
-
-export interface UpdateTaskInput {
-  title?: string;
-  description?: string;
-  difficulty?: TaskDifficulty;
-  recurring?: RecurringPattern;
-}
-
 export interface TaskResponse {
   _id: string;
   userId: string;

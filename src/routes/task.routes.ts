@@ -19,45 +19,29 @@ import { Router } from 'express';
 
 export const taskRouter = Router();
 
-// All task routes require authentication
 taskRouter.use(authenticate);
 
-// Create a new task
-taskRouter.post('/', validateRequest({ body: createTaskSchema.shape.body }), createTaskHandler);
+taskRouter.post('/', validateRequest({ body: createTaskSchema }), createTaskHandler);
 
-// Get all user's tasks (with optional planetId query filter)
 taskRouter.get('/', getUserTasksHandler);
 
-// Get all tasks for a specific planet
 taskRouter.get(
   '/planet/:planetId',
-  validateRequest({ params: planetIdSchema.shape.params }),
+  validateRequest({ params: planetIdSchema }),
   getPlanetTasksHandler,
 );
 
-// Get a specific task
-taskRouter.get('/:id', validateRequest({ params: taskIdSchema.shape.params }), getTaskHandler);
+taskRouter.get('/:id', validateRequest({ params: taskIdSchema }), getTaskHandler);
 
-// Update a task
 taskRouter.patch(
   '/:id',
   validateRequest({
-    params: taskIdSchema.shape.params,
-    body: updateTaskSchema.shape.body,
+    params: taskIdSchema,
+    body: updateTaskSchema,
   }),
   updateTaskHandler,
 );
 
-// Complete a task (triggers XP and streak updates)
-taskRouter.post(
-  '/:id/complete',
-  validateRequest({ params: taskIdSchema.shape.params }),
-  completeTaskHandler,
-);
+taskRouter.post('/:id/complete', validateRequest({ params: taskIdSchema }), completeTaskHandler);
 
-// Archive a task (soft delete)
-taskRouter.delete(
-  '/:id',
-  validateRequest({ params: taskIdSchema.shape.params }),
-  archiveTaskHandler,
-);
+taskRouter.delete('/:id', validateRequest({ params: taskIdSchema }), archiveTaskHandler);

@@ -1,9 +1,10 @@
 import RefreshToken from '@/models/refreshToken.model';
 import User from '@/models/user.model';
-import { AuthTokens, LoginInput, RegisterInput } from '@/types/auth';
+import { AuthTokens } from '@/types/auth';
 import { HttpError } from '@/utils/http-error';
 import { logger } from '@/utils/logger';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/utils/token';
+import { LoginInput, RegisterInput } from '@/validation/auth.schema';
 import crypto from 'crypto';
 
 export const refreshTokens = async (token: string): Promise<AuthTokens> => {

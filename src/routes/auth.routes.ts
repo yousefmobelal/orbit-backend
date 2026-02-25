@@ -12,12 +12,8 @@ import { Router } from 'express';
 
 export const authRouter: Router = Router();
 
-authRouter.post('/register', validateRequest({ body: registerSchema.shape.body }), registerHandler);
-authRouter.post('/login', validateRequest({ body: loginSchema.shape.body }), loginHandler);
-authRouter.post(
-  '/refresh',
-  validateRequest({ body: refreshSchema.shape.body }),
-  refreshTokenHandler,
-);
-authRouter.post('/logout', validateRequest({ body: logoutSchema.shape.body }), logoutHandler);
+authRouter.post('/register', validateRequest({ body: registerSchema }), registerHandler);
+authRouter.post('/login', validateRequest({ body: loginSchema }), loginHandler);
+authRouter.post('/refresh', validateRequest({ body: refreshSchema }), refreshTokenHandler);
+authRouter.post('/logout', validateRequest({ body: logoutSchema }), logoutHandler);
 authRouter.post('/revoke', authenticate, revokeTokenHandler);

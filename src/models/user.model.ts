@@ -9,7 +9,7 @@ interface IUser extends Document {
     public_id: string;
   };
   globalStreak: number;
-  lastActiveDate: Date;
+  lastActiveDate: Date | null;
   globalXP: number;
   globalLevel: number;
   hasCreatedFirstTask: boolean;
@@ -44,6 +44,7 @@ const userSchema = new mongoose.Schema<IUser>(
 
     lastActiveDate: {
       type: Date,
+      default: null,
     },
     globalXP: {
       type: Number,

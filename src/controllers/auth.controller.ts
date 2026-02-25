@@ -5,10 +5,11 @@ import {
   register,
   revokeRefreshToken,
 } from '@/services/auth.service';
-import { LoginInput, RegisterInput, AuthTokens } from '@/types/auth';
+import { AuthTokens } from '@/types/auth';
 import { asyncHandler } from '@/utils/async-handler';
 import { HttpError } from '@/utils/http-error';
 import { ResponseStatus } from '@/types/response';
+import { LoginInput, RegisterInput } from '@/validation/auth.schema';
 
 export const loginHandler = asyncHandler(async (req, res) => {
   const payload = req.body as LoginInput;
@@ -53,6 +54,6 @@ export const revokeTokenHandler = asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new HttpError('Authentication required', 401);
   }
-  await revokeRefreshToken(req.user._id.toString());
+  await revokeRefreshToken(req.user.id.toString());
   res.status(204).send();
 });

@@ -11,17 +11,13 @@ import { Router } from 'express';
 
 export const userRouter = Router();
 
-userRouter.get('/me', authenticate, getMeHandler);
+userRouter.use(authenticate);
+
+userRouter.get('/me', getMeHandler);
 userRouter.patch(
   '/me',
-  authenticate,
   upload.single('avatar'),
-  validateRequest({ body: updateProfileSchema.shape.body }),
+  validateRequest({ body: updateProfileSchema }),
   updateProfileHandler,
 );
-userRouter.delete(
-  '/me',
-  authenticate,
-  validateRequest({ body: deleteProfileSchema.shape.body }),
-  deleteProfileHandler,
-);
+userRouter.delete('/me', validateRequest({ body: deleteProfileSchema }), deleteProfileHandler);

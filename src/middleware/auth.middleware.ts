@@ -23,7 +23,7 @@ export const authenticate = asyncHandler(
         throw new HttpError('User not found', 401);
       }
 
-      req.user = user;
+      req.user = { id: user._id.toString(), email: user.email };
       next();
     } catch (error) {
       throw new HttpError('Invalid or expired token', 401);

@@ -6,7 +6,7 @@ export interface UserType {
     public_id: string;
   };
   globalStreak: number;
-  lastActiveDate: Date;
+  lastActiveDate: Date | null;
   globalXP: number;
   globalLevel: number;
   requiredXPForNextLevel: number;

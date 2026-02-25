@@ -1,3 +1,4 @@
+import { PlanetResponse } from '@/types/planet';
 import mongoose from 'mongoose';
 
 const planetSchema = new mongoose.Schema(
