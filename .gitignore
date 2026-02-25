@@ -42,3 +42,4 @@ out/      # Next.js output
 Thumbs.db # Windows
 .vscode/
 .idea/
+.vercel
