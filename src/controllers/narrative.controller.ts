@@ -10,7 +10,7 @@ import type { Request, Response } from 'express';
  * @access Private
  */
 export const getNarratives = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id;
+  const userId = req.user!.id;
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
 
   const narratives: NarrativeResponse[] = await getUserNarratives(userId, limit);
@@ -28,7 +28,7 @@ export const getNarratives = asyncHandler(async (req: Request, res: Response) =>
  * @access Private
  */
 export const getLatest = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id;
+  const userId = req.user!.id;
 
   const narrative: NarrativeResponse | null = await getLatestNarrative(userId);
 
