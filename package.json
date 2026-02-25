@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "orbit",
   "version": "1.0.0",
   "description": "Orbit is a full-stack productivity platform that visualizes goals as interactive planetary systems, using AI-generated narratives and real-time animations to transform task management into an immersive experience.",
