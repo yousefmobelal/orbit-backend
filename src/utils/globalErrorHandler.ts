@@ -44,11 +44,13 @@ const sendErrorDev = (err: HttpError, res: Response): void => {
 };
 
 const sendErrorProd = (err: HttpError, res: Response): void => {
+  console.log('This is the err', err);
   // Operational trusted error: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: ResponseStatus.FAIL,
       message: err.message,
+      ...(err.details && { error: { details: err.details } }),
     });
   }
   // Programming or other unkown error: don't leak error details
@@ -78,7 +80,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next): void => {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line node/no-unsupported-features/es-syntax
-    let error = { ...err };
+    let error = { ...err, message: err.message };
 
     // There was a problem when i use error.name === 'CastError' it comes out that
     // err in mongoose doesn't have the property name but it inherits it from it's
