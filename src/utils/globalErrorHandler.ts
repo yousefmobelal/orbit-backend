@@ -44,7 +44,6 @@ const sendErrorDev = (err: HttpError, res: Response): void => {
 };
 
 const sendErrorProd = (err: HttpError, res: Response): void => {
-  console.log('This is the err', err);
   // Operational trusted error: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
