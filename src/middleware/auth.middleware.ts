@@ -8,6 +8,7 @@ export const authenticate = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
     console.log('Auth Header:', authHeader);
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new HttpError('Authentication required', 401);
     }

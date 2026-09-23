@@ -15,7 +15,6 @@ const generateNarrativeContent = async (
     try {
       return await generateWithAI(eventType, metadata);
     } catch (error) {
-      console.error('AI generation failed, falling back to templates:', error);
       return generateWithTemplate(eventType, metadata);
     }
   }
